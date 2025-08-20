@@ -14,6 +14,9 @@ export const env = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
+  OPENROUTER_BASE_URL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+  OPENROUTER_APP_URL: process.env.OPENROUTER_APP_URL || 'http://localhost:3000',
+  OPENROUTER_APP_NAME: process.env.OPENROUTER_APP_NAME || 'Sparq Connection',
 
   // Rate Limiting Settings
   RATE_LIMITING_ENABLED: process.env.RATE_LIMITING_ENABLED !== 'false', // Default to enabled
@@ -50,6 +53,11 @@ export function validateEnvironment(): { valid: boolean; errors: string[] } {
     if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
       errors.push('Upstash Redis configuration missing in production environment')
     }
+  }
+  
+  // OpenRouter validation
+  if (!env.OPENROUTER_API_KEY) {
+    console.warn("⚠️ OPENROUTER_API_KEY is not set. AI features will be disabled.");
   }
   
   return {

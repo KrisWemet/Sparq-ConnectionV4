@@ -9,13 +9,11 @@ import { AlertTriangle, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // Import all registration components
-import { JurisdictionSelector } from '@/components/auth/JurisdictionSelector/JurisdictionSelector'
 import { SafetyResourcesIntro } from '@/components/auth/SafetyResourcesIntro/SafetyResourcesIntro'
 import { RegistrationFlow } from '@/components/auth/RegistrationFlow/RegistrationFlow'
 import { SafetyOnboarding } from '@/components/auth/SafetyOnboarding/SafetyOnboarding'
 
 // Types
-import type { JurisdictionInfo } from '@/lib/auth/jurisdiction-detection'
 import type { RegistrationData } from '@/components/auth/RegistrationFlow/RegistrationFlow'
 
 interface SafetyProfile {
@@ -30,18 +28,18 @@ interface SafetyProfile {
 }
 
 type RegistrationStep = 
-  | 'jurisdiction' 
+  | 'region' 
   | 'safety_resources' 
   | 'registration' 
   | 'safety_onboarding' 
   | 'complete'
 
 export default function RegisterPage() {
-  const [currentStep, setCurrentStep] = useState<RegistrationStep>('jurisdiction')
+  const [currentStep, setCurrentStep] = useState<RegistrationStep>('region')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [userId, setUserId] = useState<string>('')
-  const [jurisdiction, setJurisdiction] = useState<JurisdictionInfo | null>(null)
+  const [region, setRegion] = useState<string>('CA-AB')
   const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null)
   const [safetyProfile, setSafetyProfile] = useState<SafetyProfile | null>(null)
   
@@ -59,8 +57,8 @@ export default function RegisterPage() {
     checkAuth()
   }, [router])
 
-  const handleJurisdictionSelected = (selectedJurisdiction: JurisdictionInfo, confidence: number) => {
-    setJurisdiction(selectedJurisdiction)
+  const handleRegionSelected = (selectedRegion: string) => {
+    setRegion(selectedRegion)
     setCurrentStep('safety_resources')
   }
 
@@ -80,7 +78,7 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: data.fullName,
-            jurisdiction: jurisdiction?.code || 'US'
+            region: region
           }
         }
       })
@@ -170,8 +168,8 @@ export default function RegisterPage() {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 'jurisdiction':
-        return 'Location & Privacy Settings'
+      case 'region':
+        return 'Select Your Region'
       case 'safety_resources':
         return 'Safety Resources'
       case 'registration':
@@ -187,7 +185,7 @@ export default function RegisterPage() {
 
   const getStepNumber = () => {
     switch (currentStep) {
-      case 'jurisdiction':
+      case 'region':
         return 1
       case 'safety_resources':
         return 2
@@ -254,18 +252,43 @@ export default function RegisterPage() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {currentStep === 'jurisdiction' && (
-              <JurisdictionSelector
-                onJurisdictionSelected={handleJurisdictionSelected}
-                onError={setError}
-                autoDetect={true}
-              />
+            {currentStep === 'region' && (
+              <div className="max-w-md mx-auto space-y-6">
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold mb-2">Select Your Region</h2>
+                  <p className="text-gray-600 mb-4">
+                    This helps us provide region-specific safety resources and support.
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-700">Region</span>
+                    <select 
+                      className="mt-1 w-full rounded-lg border p-3 text-base"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                    >
+                      <option value="CA-AB">Canada — Alberta</option>
+                      <option value="US">United States</option>
+                      <option value="DEFAULT">Other / Not sure</option>
+                    </select>
+                  </label>
+                  
+                  <Button 
+                    onClick={() => handleRegionSelected(region)}
+                    className="w-full"
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </div>
             )}
 
-            {currentStep === 'safety_resources' && jurisdiction && (
+            {currentStep === 'safety_resources' && (
               <SafetyResourcesIntro
                 userId={userId}
-                jurisdiction={jurisdiction.code}
+                jurisdiction={region}
                 onComplete={handleSafetyResourcesComplete}
               />
             )}
@@ -273,7 +296,7 @@ export default function RegisterPage() {
             {currentStep === 'registration' && (
               <RegistrationFlow
                 onComplete={handleRegistrationComplete}
-                jurisdiction={jurisdiction?.code || 'US'}
+                jurisdiction={region}
                 disabled={loading}
               />
             )}
@@ -281,7 +304,7 @@ export default function RegisterPage() {
             {currentStep === 'safety_onboarding' && userId && (
               <SafetyOnboarding
                 userId={userId}
-                jurisdiction={jurisdiction?.code || 'US'}
+                jurisdiction={region}
                 onComplete={handleSafetyOnboardingComplete}
                 onBack={handleBack}
               />

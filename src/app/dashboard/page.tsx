@@ -20,6 +20,7 @@ import {
   User
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import PrivacyBadge from '@/src/components/privacy/PrivacyBadge'
 
 interface UserProfile {
   id: string
@@ -174,14 +175,17 @@ export default function DashboardPage() {
                 Your relationship wellness dashboard
               </p>
             </div>
-            <Button
-              onClick={handleViewSettings}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </Button>
+            <div className="flex items-center gap-3">
+              <PrivacyBadge />
+              <Button
+                onClick={handleViewSettings}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </div>
           </div>
 
           {/* Safety Status */}

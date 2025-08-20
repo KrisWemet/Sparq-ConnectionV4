@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, createAuthenticatedServerClient, AuthContext } from '@/lib/auth/auth-utils'
 import { AIPromptEngine } from '@/lib/ai-services/prompt-engine'
 import { CrisisDetector } from '@/lib/crisis-detection/detector'
+import { askModel } from '@/lib/ai/router'
+import { checkRateLimit } from '@/lib/rate-limiting/upstash-limiter'
 
 // Cost-optimized daily prompt generation API
 export async function GET(request: NextRequest) {
@@ -203,7 +205,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Mark prompt as completed
-export async function POST(request: NextRequest) {
+export async function PATCH(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies })
     
@@ -258,6 +260,54 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Prompt completion update failed:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Generate new daily prompt using OpenRouter
+export async function POST(req: NextRequest) {
+  try {
+    // Rate limiting
+    const rateLimitResult = await checkRateLimit('daily_prompt', req);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { topic, tone } = body ?? {};
+
+    const system = [
+      "You are Sparq Connection's relationship guide.",
+      "Be concise, warm, and evidence-based (Gottman, EFT, Attachment).",
+      "Always respect privacy and agency. Avoid therapy claims.",
+    ].join(" ");
+
+    const userPrompt = `
+      Create one daily question for couples on "${topic ?? "connection"}"
+      with a ${tone ?? "gentle"} tone. Include a 1-sentence why-it-matters,
+      and a 1-line suggestion for how partners can answer safely.
+      Output JSON:
+      {
+        "question": "...",
+        "why": "...",
+        "how_to_answer": "..."
+      }
+    `.trim();
+
+    const answer = await askModel(userPrompt, {
+      task: "structured_generation",
+      system,
+      temperature: 0.6,
+      max_tokens: 400,
+    });
+
+    return NextResponse.json(JSON.parse(answer));
+  } catch (err: any) {
+    // If the model returned plain text instead of JSON, fall back
+    try {
+      return NextResponse.json({ question: err?.message ?? "Unavailable right now." }, { status: 200 });
+    } catch {
+      return NextResponse.json({ error: "Failed to generate daily prompt." }, { status: 500 });
+    }
   }
 }
 

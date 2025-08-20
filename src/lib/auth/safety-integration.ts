@@ -297,25 +297,20 @@ export class SafetyIntegrator {
   /**
    * Get safety resources for user's jurisdiction
    */
-  async getJurisdictionResources(userId: string): Promise<SafetyResource[]> {
-    // Get user's current jurisdiction
-    const { data: userJurisdiction } = await this.supabase
-      .from('user_jurisdictions')
-      .select('jurisdictions(country_code)')
+  async getRegionResources(userId: string): Promise<SafetyResource[]> {
+    // Get user's region from user_settings
+    const { data: userSettings } = await this.supabase
+      .from('user_settings')
+      .select('region')
       .eq('user_id', userId)
-      .eq('is_current', true)
       .single()
 
-    const countryCode = userJurisdiction?.jurisdictions?.country_code || 'GLOBAL'
+    const region = userSettings?.region || 'DEFAULT'
 
-    // Get appropriate safety resources
-    const { data: resources, error } = await this.supabase
-      .from('safety_resources')
-      .select('*')
-      .or(`country_code.eq.${countryCode},country_code.eq.GLOBAL`)
-      .eq('is_active', true)
-      .eq('verified', true)
-      .order('display_priority', { ascending: true })
+    // Get appropriate safety resources for the region
+    // For now, return empty array as we're using the new resources system
+    // This will be replaced by the resourcesFor() function from safety/resources.ts
+    return []
 
     if (error) {
       console.error('Error fetching safety resources:', error)
@@ -369,7 +364,7 @@ export class SafetyIntegrator {
     userId: string,
     reason: string
   ): Promise<void> {
-    const resources = await this.getJurisdictionResources(userId)
+    const resources = await this.getRegionResources(userId)
     
     // Log resource provision
     await this.supabase

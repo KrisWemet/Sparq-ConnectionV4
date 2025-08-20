@@ -51,6 +51,25 @@ export function createAuthenticatedMiddlewareClient(req: NextRequest, res: NextR
 /**
  * Verify user authentication and return enhanced user context
  */
+/**
+ * Get user ID from request (simplified version for basic auth needs)
+ */
+export async function getUserId(request: NextRequest): Promise<string | null> {
+  try {
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError || !session?.user) {
+      return null
+    }
+    
+    return session.user.id
+  } catch (error) {
+    console.error('Error getting user ID:', error)
+    return null
+  }
+}
+
 export async function verifyAuthentication(request?: NextRequest): Promise<AuthContext | null> {
   try {
     const supabase = await createAuthenticatedServerClient(request)
