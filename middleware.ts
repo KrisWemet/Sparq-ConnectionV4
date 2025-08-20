@@ -2,6 +2,7 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Database } from '@/types/database-complete.types'
+import { rateLimitMiddleware } from '@/lib/rate-limiting/middleware'
 
 // Define route protection patterns
 const PUBLIC_ROUTES = [
@@ -55,6 +56,12 @@ function isRouteMatch(pathname: string, routes: string[]): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
   const response = NextResponse.next()
+
+  // Apply rate limiting first (for API routes)
+  const rateLimitResponse = await rateLimitMiddleware(request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
 
   // Create Supabase client
   const supabase = createMiddlewareClient<Database>({ req: request, res: response })

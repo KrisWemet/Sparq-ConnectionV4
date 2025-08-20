@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { withAuth, createAuthenticatedServerClient, AuthContext } from '@/lib/auth/auth-utils'
 import { AIPromptEngine } from '@/lib/ai-services/prompt-engine'
 import { CrisisDetector } from '@/lib/crisis-detection/detector'
-import { Database } from '@/types/database.types'
 
 // Cost-optimized daily prompt generation API
 export async function GET(request: NextRequest) {

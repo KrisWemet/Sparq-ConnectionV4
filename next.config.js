@@ -15,7 +15,20 @@ const nextConfig = {
     ]
   },
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development'
+    
     return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: isDev 
+              ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;"
+              : "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;"
+          }
+        ]
+      },
       {
         source: '/api/:path*',
         headers: [
