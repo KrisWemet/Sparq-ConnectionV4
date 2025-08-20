@@ -1,0 +1,361 @@
+name: RLS Security Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of RLS tests to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - critical-only
+        - performance-only
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  rls-security-validation:
+    name: 🛡️ RLS Security Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        test-suite: [critical, performance]
+        include:
+          - test-suite: critical
+            test-args: '--skip-performance --fail-fast'
+            required: true
+          - test-suite: performance
+            test-args: '--performance-only'
+            required: false
+    
+    steps:
+      - name: 🛒 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📥 Install Dependencies
+        run: |
+          npm ci
+          npm run typecheck
+          
+      - name: 🔧 Setup Test Environment
+        run: |
+          # Create test report directory
+          mkdir -p test-reports
+          
+          # Verify required environment variables
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "❌ SUPABASE_URL secret is not configured"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "❌ SUPABASE_SERVICE_ROLE_KEY secret is not configured"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            echo "❌ SUPABASE_ANON_KEY secret is not configured"
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are configured"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          
+      - name: 🧪 Run ${{ matrix.test-suite }} RLS Tests
+        id: rls-tests
+        run: |
+          echo "Running ${{ matrix.test-suite }} RLS security tests..."
+          
+          # Determine test arguments based on input or matrix
+          if [ "${{ github.event.inputs.test_type }}" == "critical-only" ]; then
+            TEST_ARGS="--skip-performance --fail-fast"
+          elif [ "${{ github.event.inputs.test_type }}" == "performance-only" ]; then
+            TEST_ARGS="--performance-only"
+          else
+            TEST_ARGS="${{ matrix.test-args }}"
+          fi
+          
+          echo "Test arguments: $TEST_ARGS"
+          
+          # Run the RLS test suite
+          node scripts/run-rls-tests.js $TEST_ARGS --verbose
+        env:
+          NODE_ENV: test
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        continue-on-error: ${{ !matrix.required }}
+          
+      - name: 📊 Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rls-test-reports-${{ matrix.test-suite }}
+          path: test-reports/
+          retention-days: 30
+          
+      - name: 🚨 Security Failure Notification
+        if: failure() && matrix.required
+        run: |
+          echo "🚨 CRITICAL SECURITY TEST FAILURE 🚨"
+          echo "RLS security tests have failed. This indicates potential security vulnerabilities."
+          echo "DO NOT MERGE OR DEPLOY until security issues are resolved."
+          echo ""
+          echo "Review the test logs above and fix all failing security tests."
+          exit 1
+
+  rls-compliance-check:
+    name: 🔍 RLS Compliance Check
+    runs-on: ubuntu-latest
+    needs: rls-security-validation
+    if: always()
+    
+    steps:
+      - name: 🛒 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 📥 Download Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rls-test-reports-*
+          path: test-reports/
+          merge-multiple: true
+          
+      - name: 📋 Analyze Security Results
+        id: security-analysis
+        run: |
+          echo "Analyzing RLS security test results..."
+          
+          # Check if any critical tests failed
+          CRITICAL_FAILURES=0
+          PERFORMANCE_ISSUES=0
+          
+          if [ -f "test-reports/rls-test-report-*.json" ]; then
+            # Parse JSON reports for failures
+            for report in test-reports/rls-test-report-*.json; do
+              if [ -f "$report" ]; then
+                # Check for critical failures
+                if grep -q '"deploymentRecommendation": "DO_NOT_DEPLOY"' "$report"; then
+                  CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+                fi
+                
+                # Check for performance issues
+                if grep -q '"performanceIssues"' "$report"; then
+                  PERFORMANCE_ISSUES=$((PERFORMANCE_ISSUES + 1))
+                fi
+              fi
+            done
+          fi
+          
+          echo "Critical failures: $CRITICAL_FAILURES"
+          echo "Performance issues: $PERFORMANCE_ISSUES"
+          
+          # Set outputs for subsequent steps
+          echo "critical_failures=$CRITICAL_FAILURES" >> $GITHUB_OUTPUT
+          echo "performance_issues=$PERFORMANCE_ISSUES" >> $GITHUB_OUTPUT
+          
+          # Generate summary
+          if [ $CRITICAL_FAILURES -eq 0 ]; then
+            echo "✅ No critical security failures detected"
+            echo "safe_to_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ $CRITICAL_FAILURES critical security failure(s) detected"
+            echo "safe_to_deploy=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: 🎯 Set Deployment Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const safeToDeployOutput = '${{ steps.security-analysis.outputs.safe_to_deploy }}';
+            const safeToDeploy = safeToDeployOutput === 'true';
+            const criticalFailures = parseInt('${{ steps.security-analysis.outputs.critical_failures }}');
+            const performanceIssues = parseInt('${{ steps.security-analysis.outputs.performance_issues }}');
+            
+            const status = safeToDeploy ? 'success' : 'failure';
+            const description = safeToDeploy 
+              ? 'All RLS security tests passed - Safe for deployment'
+              : `${criticalFailures} critical security failure(s) - DO NOT DEPLOY`;
+            
+            // Set commit status
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: status,
+              target_url: `${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              description: description,
+              context: 'RLS Security Tests'
+            });
+            
+            // Add PR comment if this is a PR and there are failures
+            if (context.eventName === 'pull_request' && !safeToDeploy) {
+              const commentBody = `## 🚨 RLS Security Test Failures
+            
+            **Critical Failures:** ${criticalFailures}
+            **Performance Issues:** ${performanceIssues}
+            
+            ❌ **DO NOT MERGE** until all security issues are resolved.
+            
+            ### Actions Required:
+            1. Review the [test results](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            2. Fix all failing RLS security tests
+            3. Re-run tests to verify fixes
+            
+            ### Security Impact:
+            RLS (Row Level Security) failures can lead to:
+            - Unauthorized data access between users
+            - Privacy violations
+            - Compliance violations (GDPR, PIPEDA)
+            - Potential data breaches
+            
+            Please prioritize fixing these security issues before proceeding with the merge.`;
+            
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+            }
+            
+      - name: 📈 Generate Security Summary
+        run: |
+          echo "## 🛡️ RLS Security Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Critical Failures | ${{ steps.security-analysis.outputs.critical_failures }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance Issues | ${{ steps.security-analysis.outputs.performance_issues }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Safe to Deploy | ${{ steps.security-analysis.outputs.safe_to_deploy }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.security-analysis.outputs.safe_to_deploy }}" == "true" ]; then
+            echo "✅ **All RLS security tests passed successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The application's Row Level Security policies are working correctly and it's safe to deploy." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Security test failures detected!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **DO NOT DEPLOY** until all security issues are resolved." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "RLS failures can lead to unauthorized data access and privacy violations." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+      - name: 🚫 Block Deployment on Security Failures
+        if: steps.security-analysis.outputs.safe_to_deploy != 'true'
+        run: |
+          echo "🚨 BLOCKING DEPLOYMENT DUE TO SECURITY FAILURES 🚨"
+          echo ""
+          echo "Critical security tests have failed. This workflow will fail to prevent"
+          echo "deployment of code with security vulnerabilities."
+          echo ""
+          echo "Please fix all security issues before proceeding."
+          exit 1
+
+  notify-on-failure:
+    name: 📧 Notify on Security Failures
+    runs-on: ubuntu-latest
+    needs: [rls-security-validation, rls-compliance-check]
+    if: failure() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 🚨 Send Security Alert
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create an issue for security failures on main branch
+            const issueTitle = `🚨 RLS Security Test Failures - ${new Date().toISOString().split('T')[0]}`;
+            const issueBody = `## Critical Security Alert
+            
+            RLS (Row Level Security) tests have failed on the main branch.
+            
+            **Workflow Run:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            **Commit:** ${context.sha}
+            **Triggered by:** ${context.actor}
+            
+            ### Immediate Actions Required:
+            1. 🔍 Investigate the security test failures
+            2. 🛠️ Fix all RLS policy issues
+            3. ✅ Ensure all tests pass before further deployments
+            4. 🔒 Review data access patterns and user isolation
+            
+            ### Security Impact:
+            RLS failures can result in:
+            - Unauthorized access to user data
+            - Cross-couple data leakage
+            - Privacy compliance violations
+            - Potential data breaches
+            
+            **This issue will be automatically closed when RLS tests pass again.**`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['security', 'critical', 'rls-failure']
+            });
+
+  close-security-issues:
+    name: 📝 Close Security Issues
+    runs-on: ubuntu-latest
+    needs: [rls-security-validation, rls-compliance-check]
+    if: success() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: ✅ Close Resolved Security Issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find and close any open RLS security issues
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'rls-failure',
+              state: 'open'
+            });
+            
+            for (const issue of issues.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ **Security Issue Resolved**
+                
+                RLS security tests are now passing successfully.
+                
+                **Resolution Commit:** ${context.sha}
+                **Workflow Run:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
+                
+                Automatically closing this security issue.`
+              });
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }

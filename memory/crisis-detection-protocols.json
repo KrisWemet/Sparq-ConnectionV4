@@ -1,0 +1,149 @@
+{
+  "crisis_levels": {
+    "critical": {
+      "definition": "Immediate danger to self or others",
+      "indicators": [
+        "Suicidal ideation with plan",
+        "Domestic violence threats or actions",
+        "Substance abuse emergency",
+        "Psychotic episodes"
+      ],
+      "response_time": "0-30 seconds",
+      "required_actions": [
+        "Immediate professional intervention",
+        "Emergency services contact if needed",
+        "Crisis hotline connection",
+        "Safety plan activation"
+      ]
+    },
+    "high": {
+      "definition": "Significant risk requiring professional attention",
+      "indicators": [
+        "Persistent suicidal thoughts",
+        "Emotional abuse patterns",
+        "Severe depression symptoms",
+        "Escalating relationship violence"
+      ],
+      "response_time": "1-5 minutes",
+      "required_actions": [
+        "Professional referral within 24 hours",
+        "Safety planning",
+        "Resource provision",
+        "Follow-up scheduling"
+      ]
+    },
+    "medium": {
+      "definition": "Concerning patterns requiring monitoring",
+      "indicators": [
+        "Relationship distress patterns",
+        "Communication breakdown",
+        "Emotional withdrawal",
+        "Conflict escalation"
+      ],
+      "response_time": "5-15 minutes",
+      "required_actions": [
+        "Enhanced monitoring",
+        "Resource provision",
+        "Professional consultation recommendation",
+        "Check-in scheduling"
+      ]
+    },
+    "low": {
+      "definition": "Minor concerns with standard support",
+      "indicators": [
+        "Occasional relationship challenges",
+        "Communication improvements needed",
+        "Minor stress indicators"
+      ],
+      "response_time": "Standard processing",
+      "required_actions": [
+        "Standard guidance provision",
+        "Resource recommendations",
+        "Continued monitoring"
+      ]
+    }
+  },
+  "crisis_resources": {
+    "emergency_contacts": {
+      "national_suicide_prevention_lifeline": "988",
+      "crisis_text_line": "Text HOME to 741741",
+      "national_domestic_violence_hotline": "1-800-799-7233",
+      "samhsa_national_helpline": "1-800-662-4357",
+      "emergency_services": "911"
+    },
+    "professional_network": {
+      "availability": "24/7",
+      "response_time": "Critical: <30 seconds, High: <5 minutes",
+      "specializations": [
+        "Crisis intervention specialists",
+        "Licensed therapists",
+        "Domestic violence counselors",
+        "Substance abuse counselors"
+      ]
+    }
+  },
+  "detection_algorithms": {
+    "keyword_based": {
+      "critical_keywords": [
+        "want to die", "kill myself", "suicide", "end it all",
+        "not worth living", "hurt myself", "can't go on",
+        "better off dead", "planning to hurt"
+      ],
+      "violence_keywords": [
+        "afraid of partner", "threatens me", "hits me",
+        "controls everything", "won't let me", "isolates me",
+        "explosive anger", "violent"
+      ],
+      "substance_keywords": [
+        "drinking too much", "using drugs", "can't stop drinking",
+        "addiction is ruining", "blackouts", "hiding my drinking"
+      ]
+    },
+    "pattern_recognition": {
+      "escalation_patterns": "Increasing frequency and intensity of negative language",
+      "withdrawal_patterns": "Decreased engagement and emotional expression",
+      "crisis_cycles": "Recurring patterns of crisis and resolution"
+    },
+    "behavioral_analysis": {
+      "assessment_scores": "Dramatic changes in relationship satisfaction scores",
+      "interaction_frequency": "Significant changes in platform usage patterns",
+      "help_seeking": "Increased requests for crisis resources"
+    }
+  },
+  "intervention_protocols": {
+    "immediate_intervention": {
+      "triggers": ["Critical level crisis indicators"],
+      "actions": [
+        "Interrupt normal processing",
+        "Connect to crisis professional immediately",
+        "Provide emergency resources",
+        "Activate safety plan",
+        "Document incident"
+      ]
+    },
+    "escalation_procedures": {
+      "professional_notification": "Automatic for critical and high levels",
+      "emergency_services": "When immediate physical danger present",
+      "follow_up_required": "All crisis interventions require follow-up",
+      "documentation": "Complete documentation required for all interventions"
+    }
+  },
+  "safety_validation": {
+    "all_content_screening": "Every user input screened for crisis indicators",
+    "ai_response_validation": "All AI responses validated for safety",
+    "continuous_monitoring": "Ongoing monitoring for all users with crisis history",
+    "false_positive_management": "Procedures for handling false positive detections"
+  },
+  "compliance_requirements": {
+    "mandatory_reporting": {
+      "child_abuse": "Immediate reporting required",
+      "elder_abuse": "Immediate reporting required",
+      "duty_to_warn": "When credible threat to specific person"
+    },
+    "documentation_standards": {
+      "incident_reports": "Complete documentation within 24 hours",
+      "decision_rationale": "All intervention decisions must be documented",
+      "outcome_tracking": "Follow-up and resolution documentation required"
+    }
+  }
+}

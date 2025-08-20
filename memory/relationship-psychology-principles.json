@@ -1,0 +1,81 @@
+{
+  "frameworks": {
+    "gottman_method": {
+      "description": "Evidence-based approach focusing on the Four Horsemen, Love Maps, and Emotional Banking",
+      "key_principles": [
+        "Build Love Maps - Know your partner deeply",
+        "Nurture fondness and admiration",
+        "Turn toward each other during everyday moments",
+        "Accept influence from your partner",
+        "Solve solvable problems",
+        "Overcome gridlock on perpetual problems",
+        "Create shared meaning"
+      ],
+      "four_horsemen": ["Criticism", "Contempt", "Defensiveness", "Stonewalling"],
+      "antidotes": ["Use I statements", "Express appreciation", "Take responsibility", "Self-soothe"]
+    },
+    "eft_emotionally_focused_therapy": {
+      "description": "Attachment-based therapy focusing on emotional bonds and cycles",
+      "key_principles": [
+        "Identify negative cycles",
+        "Access underlying emotions",
+        "Restructure interactions",
+        "Create new bonding experiences"
+      ],
+      "attachment_styles": ["Secure", "Anxious", "Avoidant", "Disorganized"]
+    },
+    "attachment_theory": {
+      "description": "Foundation for understanding relationship patterns and emotional bonds",
+      "secure_attachment": "Comfortable with intimacy and independence",
+      "anxious_attachment": "High need for closeness, fear of abandonment",
+      "avoidant_attachment": "Values independence, uncomfortable with too much closeness",
+      "disorganized_attachment": "Inconsistent patterns, often from trauma"
+    },
+    "communication_research": {
+      "active_listening": ["Reflect back what you hear", "Ask clarifying questions", "Validate emotions"],
+      "nonviolent_communication": ["Observation", "Feelings", "Needs", "Requests"],
+      "conflict_resolution": ["Stay present", "Avoid criticism", "Focus on specific behaviors", "Take breaks when needed"]
+    }
+  },
+  "assessment_tools": {
+    "dyadic_adjustment_scale": "Measures relationship satisfaction and adjustment",
+    "relationship_assessment_scale": "Brief measure of relationship satisfaction",
+    "experiences_in_close_relationships": "Measures adult attachment anxiety and avoidance",
+    "communication_patterns_questionnaire": "Assesses demand-withdraw communication patterns"
+  },
+  "crisis_indicators": {
+    "relationship_specific": [
+      "Increased frequency of the Four Horsemen",
+      "Emotional distance and withdrawal",
+      "Loss of fondness and admiration",
+      "Inability to repair after conflicts",
+      "Parallel lives with little connection"
+    ],
+    "individual_indicators": [
+      "Depression or anxiety symptoms",
+      "Substance use as coping mechanism",
+      "Suicidal or self-harm thoughts",
+      "Domestic violence or abuse"
+    ]
+  },
+  "safety_protocols": {
+    "always_prioritize": "Physical and emotional safety over relationship preservation",
+    "professional_referral_triggers": [
+      "Domestic violence indicators",
+      "Substance abuse problems",
+      "Mental health crises",
+      "Trauma-related issues",
+      "Severe communication breakdowns"
+    ]
+  },
+  "evidence_base": {
+    "research_sources": [
+      "Journal of Marriage and Family Therapy",
+      "Attachment & Human Development",
+      "Journal of Family Psychology",
+      "Clinical Child and Family Psychology Review"
+    ],
+    "validation_requirements": "All guidance must be grounded in peer-reviewed research",
+    "update_frequency": "Quarterly review of latest research developments"
+  }
+}

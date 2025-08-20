@@ -1,0 +1,51 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    // Safety and security rules
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-script-url": "error",
+    
+    // TypeScript strict rules
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    
+    // Crisis detection specific rules
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    "prefer-const": "error",
+    "no-var": "error",
+    
+    // Relationship app specific rules
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "@typescript-eslint/no-unnecessary-condition": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/crisis-detection/**/*.ts"],
+      "rules": {
+        // Extra strict rules for crisis detection code
+        "complexity": ["error", 10],
+        "max-depth": ["error", 3],
+        "max-lines-per-function": ["error", 50]
+      }
+    },
+    {
+      "files": ["src/lib/ai-services/**/*.ts"],
+      "rules": {
+        // Strict rules for AI services
+        "@typescript-eslint/explicit-function-return-type": "error",
+        "@typescript-eslint/explicit-module-boundary-types": "error"
+      }
+    }
+  ]
+}
